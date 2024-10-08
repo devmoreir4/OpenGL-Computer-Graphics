@@ -11,10 +11,13 @@ struct Ponto {
 
 vector<Ponto> objeto;
 int opcao = 0;
+float corR = 0.0, corG = 0.0, corB = 0.0;
 
 void desenhaObjeto() {
     glClear(GL_COLOR_BUFFER_BIT);
     glBegin(GL_POLYGON);
+
+    glColor3f(corR, corG, corB);
 
     for (auto &ponto : objeto) {
         glVertex2f(ponto.x, ponto.y);
@@ -51,6 +54,13 @@ void escalar(float sx, float sy) {
     desenhaObjeto();
 }
 
+void mudarCor(float red, float green, float blue) {
+    corR = red;
+    corG = green;
+    corB = blue;
+    desenhaObjeto(); // redesenha com a nova cor
+}
+
 void menu(int opcao) {
     switch (opcao) {
         case 1:
@@ -61,6 +71,15 @@ void menu(int opcao) {
             break;
         case 3:
             escalar(1.5, 1.5);
+            break;
+        case 4:
+            mudarCor(1.0, 0.0, 0.0); // red
+            break;
+        case 5:
+            mudarCor(0.0, 1.0, 0.0); // green
+            break;
+        case 6:
+            mudarCor(0.0, 0.0, 1.0); // blue
             break;
     }
 }
@@ -134,6 +153,9 @@ int main(int argc, char** argv) {
     glutAddMenuEntry("Transladar", 1);
     glutAddMenuEntry("Rotacionar", 2);
     glutAddMenuEntry("Escalar", 3);
+    glutAddMenuEntry("Cor: Vermelho", 4);
+    glutAddMenuEntry("Cor: Verde", 5);
+    glutAddMenuEntry("Cor: Azul", 6);
     glutAttachMenu(GLUT_RIGHT_BUTTON);
 
     glutDisplayFunc(desenhaObjeto);
