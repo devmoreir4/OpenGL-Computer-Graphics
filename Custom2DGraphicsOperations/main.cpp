@@ -14,7 +14,7 @@ int opcao = 0;
 
 void desenhaObjeto() {
     glClear(GL_COLOR_BUFFER_BIT);
-    glBegin(GL_POLYGON);  // desenha o objeto
+    glBegin(GL_POLYGON);
 
     for (auto &ponto : objeto) {
         glVertex2f(ponto.x, ponto.y);
@@ -65,24 +65,66 @@ void menu(int opcao) {
     }
 }
 
+// inicializar a janela e o objeto
 void inicializar() {
     glClearColor(1.0, 1.0, 1.0, 1.0);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluOrtho2D(-2.0, 2.0, -2.0, 2.0);
 
-    // objeto triangulo
-    objeto.push_back({-0.5, -0.5});
-    objeto.push_back({0.5, -0.5});
-    objeto.push_back({0.0, 0.5});
-
     glColor3f(0.0, 0.0, 0.0);
 }
 
+void criarTriangulo() {
+    objeto.push_back({-0.5, -0.5});
+    objeto.push_back({0.5, -0.5});
+    objeto.push_back({0.0, 0.5});
+}
+
+void criarQuadrado() {
+    objeto.push_back({-0.5, -0.5});
+    objeto.push_back({0.5, -0.5});
+    objeto.push_back({0.5, 0.5});
+    objeto.push_back({-0.5, 0.5});
+}
+
+void criarPentagono() {
+    objeto.push_back({0.0, 0.5});
+    objeto.push_back({0.5, 0.15});
+    objeto.push_back({0.3, -0.4});
+    objeto.push_back({-0.3, -0.4});
+    objeto.push_back({-0.5, 0.15});
+}
+
 int main(int argc, char** argv) {
+    int escolha;
+
+    cout << "Escolha um desenho p/ exibir:"<<endl;
+    cout << "1. Triangulo"<<endl;
+    cout << "2. Quadrado"<<endl;
+    cout << "3. Pentagono"<<endl;
+    cout << "Digite sua escolha (1-3): ";
+    cin >> escolha;
+
+    switch (escolha) {
+        case 1:
+            criarTriangulo();
+            break;
+        case 2:
+            criarQuadrado();
+            break;
+        case 3:
+            criarPentagono();
+            break;
+        default:
+            cout << "Escolha invalida! Usando triangulo como padrao."<<endl;
+            criarTriangulo();
+            break;
+    }
+
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
-    glutInitWindowSize(400, 400);
+    glutInitWindowSize(500, 500);
     glutInitWindowPosition(100, 100);
     glutCreateWindow("Transformações 2D");
 
