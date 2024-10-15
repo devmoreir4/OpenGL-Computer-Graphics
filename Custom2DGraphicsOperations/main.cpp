@@ -54,6 +54,28 @@ void escalar(float sx, float sy) {
     desenhaObjeto();
 }
 
+void cisalhar(float shearX, float shearY) {
+    for (auto &ponto : objeto) {
+        float xNovo = ponto.x + shearX * ponto.y;
+        float yNovo = ponto.y + shearY * ponto.x;
+        ponto.x = xNovo;
+        ponto.y = yNovo;
+    }
+    desenhaObjeto();
+}
+
+void espelhar(bool eixoX, bool eixoY) {
+    for (auto &ponto : objeto) {
+        if (eixoX) {
+            ponto.y = -ponto.y;
+        }
+        if (eixoY) {
+            ponto.x = -ponto.x;
+        }
+    }
+    desenhaObjeto();
+}
+
 void mudarCor(float red, float green, float blue) {
     corR = red;
     corG = green;
@@ -80,6 +102,18 @@ void menu(int opcao) {
             break;
         case 6:
             mudarCor(0.0, 0.0, 1.0); // blue
+            break;
+        case 7:
+            cisalhar(0.5, 0.0); // cisalhamento no eixo X
+            break;
+        case 8:
+            cisalhar(0.0, 0.5); // cisalhamento no eixo Y
+            break;
+        case 9:
+            espelhar(true, false); // espelhar no eixo X
+            break;
+        case 10:
+            espelhar(false, true); // espelhar no eixo Y
             break;
     }
 }
@@ -156,6 +190,10 @@ int main(int argc, char** argv) {
     glutAddMenuEntry("Cor: Vermelho", 4);
     glutAddMenuEntry("Cor: Verde", 5);
     glutAddMenuEntry("Cor: Azul", 6);
+    glutAddMenuEntry("Cisalhar X", 7);
+    glutAddMenuEntry("Cisalhar Y", 8);
+    glutAddMenuEntry("Espelhar X", 9);
+    glutAddMenuEntry("Espelhar Y", 10);
     glutAttachMenu(GLUT_RIGHT_BUTTON);
 
     glutDisplayFunc(desenhaObjeto);
