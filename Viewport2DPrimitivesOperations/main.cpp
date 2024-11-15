@@ -57,53 +57,24 @@ void rotacionar(Ponto objeto[], int numVertices, float angulo) {
     }
 }
 
-void escalar(Ponto objeto[], int numVertices, float sx, float sy) {
-    for (int i = 0; i < numVertices; i++) {
-        objeto[i].x *= sx;
-        objeto[i].y *= sy;
-    }
-}
-
-void cisalhar(Ponto objeto[], int numVertices, float shearX, float shearY) {
-    for (int i = 0; i < numVertices; i++) {
-        float xNovo = objeto[i].x + shearX * objeto[i].y;
-        float yNovo = objeto[i].y + shearY * objeto[i].x;
-        objeto[i].x = xNovo;
-        objeto[i].y = yNovo;
-    }
-}
-
-void espelhar(Ponto objeto[], int numVertices, bool eixoX, bool eixoY) {
-    for (int i = 0; i < numVertices; i++) {
-        if (eixoX) {
-            objeto[i].y = -objeto[i].y;
-        }
-        if (eixoY) {
-            objeto[i].x = -objeto[i].x;
-        }
-    }
-}
-
-// Desenhar as duas viewports
 void display() {
     glClear(GL_COLOR_BUFFER_BIT);
 
     // Viewport esquerda: Figuras originais
     glViewport(0, 0, 250, 500);
-    glColor3f(1.0, 0.0, 0.0); // Vermelho
+    glColor3f(1.0, 0.0, 0.0);
     desenhaPonto(ponto);
-    glColor3f(0.0, 1.0, 0.0); // Verde
+    glColor3f(0.0, 1.0, 0.0);
     desenhaLinha(linha);
-    glColor3f(0.0, 0.0, 1.0); // Azul
+    glColor3f(0.0, 0.0, 1.0);
     desenhaPoligono(poligono, 4);
 
-    // Viewport direita: Figuras transformadas
-    glViewport(250, 0, 250, 500);
-    glColor3f(1.0, 0.0, 0.0); // Vermelho
+    glViewport(250, 0, 400, 500);
+    glColor3f(1.0, 0.0, 0.0);
     desenhaPonto(pontoAlterado);
-    glColor3f(0.0, 1.0, 0.0); // Verde
+    glColor3f(0.0, 1.0, 0.0);
     desenhaLinha(linhaAlterada);
-    glColor3f(0.0, 0.0, 1.0); // Azul
+    glColor3f(0.0, 0.0, 1.0);
     desenhaPoligono(poligonoAlterado, 4);
 
     glFlush();
@@ -118,51 +89,41 @@ void inicializar() {
 
 void menuContexto(int option) {
     if (option == 1) {
-        // Aplica translação
         transladar(linhaAlterada, 2, 0.2f, 0.0f);  // Translação para a direita
         transladar(poligonoAlterado, 4, 0.2f, 0.0f);  // Translação para a direita
+        transladar(&pontoAlterado, 1, 0.2f, 0.0f);  // Translação do ponto
     } else if (option == 2) {
-        // Aplica rotação
         rotacionar(linhaAlterada, 2, 45.0f);  // Rotação de 45 graus
         rotacionar(poligonoAlterado, 4, 45.0f);  // Rotação de 45 graus
-    } else if (option == 3) {
-        // Aplica escala
-        escalar(poligonoAlterado, 4, 1.5f, 1.5f);  // Escala de 1.5x
-        escalar(linhaAlterada, 2, 1.5f, 1.5f);  // Escala de 1.5x
-    } else if (option == 4) {
-        // Aplica cisalhamento
-        cisalhar(poligonoAlterado, 4, 0.2f, 0.0f);  // Cisalhamento X
-        cisalhar(linhaAlterada, 2, 0.2f, 0.0f);  // Cisalhamento X
-    } else if (option == 5) {
-        // Aplica espelhamento
-        espelhar(poligonoAlterado, 4, true, false);  // Espelhamento no eixo Y
-        espelhar(linhaAlterada, 2, true, false);  // Espelhamento no eixo Y
+        rotacionar(&pontoAlterado, 1, 45.0f);  // Rotação do ponto
     }
 
-    glutPostRedisplay();
+    glutPostRedisplay(); // Redesenha as viewports
 }
 
 void criaMenu() {
     glutCreateMenu(menuContexto);
     glutAddMenuEntry("Transladar", 1);
     glutAddMenuEntry("Rotacionar", 2);
-    glutAddMenuEntry("Escalar", 3);
-    glutAddMenuEntry("Cisalhar", 4);
-    glutAddMenuEntry("Espelhar", 5);
+}
 
-    glutAttachMenu(GLUT_RIGHT_BUTTON);
+void mouse(int button, int state, int x, int y) {
+    if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN) {
+        criaMenu();
+        glutAttachMenu(GLUT_RIGHT_BUTTON);
+    }
 }
 
 int main(int argc, char** argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
-    glutInitWindowSize(500, 500);
+    glutInitWindowSize(650, 500);
     glutInitWindowPosition(100, 100);
     glutCreateWindow("Transformações com Viewports");
 
     inicializar();
-    criaMenu();
     glutDisplayFunc(display);
+    glutMouseFunc(mouse);
     glutMainLoop();
     return 0;
 }
