@@ -1,177 +1,168 @@
-/*
- * GLUT Shapes Demo
- *
- * Written by Nigel Stewart November 2003
- *
- * This program is test harness for the sphere, cone
- * and torus shapes in GLUT.
- *
- * Spinning wireframe and smooth shaded shapes are
- * displayed until the ESC or q key is pressed.  The
- * number of geometry stacks and slices can be adjusted
- * using the + and - keys.
- */
-
-#ifdef __APPLE__
-#include <GLUT/glut.h>
-#else
+#include <iostream>
+#include <cmath>
 #include <GL/glut.h>
-#endif
 
-#include <stdlib.h>
+using namespace std;
 
-static int slices = 16;
-static int stacks = 16;
+struct Ponto {
+    float x, y;
+};
 
-/* GLUT callback Handlers */
+Ponto ponto = { -0.5f, 0.5f }; // Ponto inicial
+Ponto linha[2] = { { -0.5f, -0.5f }, { 0.5f, -0.5f } }; // Linha inicial
+Ponto poligono[4] = { { 0.0f, 0.0f }, { 0.2f, 0.0f }, { 0.2f, 0.2f }, { 0.0f, 0.2f } }; // Polígono inicial
 
-static void resize(int width, int height)
-{
-    const float ar = (float) width / (float) height;
+Ponto pontoAlterado = ponto;
+Ponto linhaAlterada[2] = { linha[0], linha[1] };
+Ponto poligonoAlterado[4] = { poligono[0], poligono[1], poligono[2], poligono[3] };
 
-    glViewport(0, 0, width, height);
+// Desenhar primitivas
+void desenhaPonto(const Ponto& p) {
+    glPointSize(10.0);
+    glBegin(GL_POINTS);
+    glVertex2f(p.x, p.y);
+    glEnd();
+}
+
+void desenhaLinha(const Ponto linha[]) {
+    glBegin(GL_LINES);
+    glVertex2f(linha[0].x, linha[0].y);
+    glVertex2f(linha[1].x, linha[1].y);
+    glEnd();
+}
+
+void desenhaPoligono(const Ponto poligono[], int numVertices) {
+    glBegin(GL_POLYGON);
+    for (int i = 0; i < numVertices; i++) {
+        glVertex2f(poligono[i].x, poligono[i].y);
+    }
+    glEnd();
+}
+
+// Funções de transformação
+void transladar(Ponto objeto[], int numVertices, float tx, float ty) {
+    for (int i = 0; i < numVertices; i++) {
+        objeto[i].x += tx;
+        objeto[i].y += ty;
+    }
+}
+
+void rotacionar(Ponto objeto[], int numVertices, float angulo) {
+    float rad = angulo * M_PI / 180.0f;
+    for (int i = 0; i < numVertices; i++) {
+        float xNovo = objeto[i].x * cos(rad) - objeto[i].y * sin(rad);
+        float yNovo = objeto[i].x * sin(rad) + objeto[i].y * cos(rad);
+        objeto[i].x = xNovo;
+        objeto[i].y = yNovo;
+    }
+}
+
+void escalar(Ponto objeto[], int numVertices, float sx, float sy) {
+    for (int i = 0; i < numVertices; i++) {
+        objeto[i].x *= sx;
+        objeto[i].y *= sy;
+    }
+}
+
+void cisalhar(Ponto objeto[], int numVertices, float shearX, float shearY) {
+    for (int i = 0; i < numVertices; i++) {
+        float xNovo = objeto[i].x + shearX * objeto[i].y;
+        float yNovo = objeto[i].y + shearY * objeto[i].x;
+        objeto[i].x = xNovo;
+        objeto[i].y = yNovo;
+    }
+}
+
+void espelhar(Ponto objeto[], int numVertices, bool eixoX, bool eixoY) {
+    for (int i = 0; i < numVertices; i++) {
+        if (eixoX) {
+            objeto[i].y = -objeto[i].y;
+        }
+        if (eixoY) {
+            objeto[i].x = -objeto[i].x;
+        }
+    }
+}
+
+// Desenhar as duas viewports
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    // Viewport esquerda: Figuras originais
+    glViewport(0, 0, 250, 500);
+    glColor3f(1.0, 0.0, 0.0); // Vermelho
+    desenhaPonto(ponto);
+    glColor3f(0.0, 1.0, 0.0); // Verde
+    desenhaLinha(linha);
+    glColor3f(0.0, 0.0, 1.0); // Azul
+    desenhaPoligono(poligono, 4);
+
+    // Viewport direita: Figuras transformadas
+    glViewport(250, 0, 250, 500);
+    glColor3f(1.0, 0.0, 0.0); // Vermelho
+    desenhaPonto(pontoAlterado);
+    glColor3f(0.0, 1.0, 0.0); // Verde
+    desenhaLinha(linhaAlterada);
+    glColor3f(0.0, 0.0, 1.0); // Azul
+    desenhaPoligono(poligonoAlterado, 4);
+
+    glFlush();
+}
+
+void inicializar() {
+    glClearColor(1.0, 1.0, 1.0, 1.0);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glFrustum(-ar, ar, -1.0, 1.0, 2.0, 100.0);
-
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity() ;
+    gluOrtho2D(-1.0, 1.0, -1.0, 1.0);
 }
 
-static void display(void)
-{
-    const double t = glutGet(GLUT_ELAPSED_TIME) / 1000.0;
-    const double a = t*90.0;
-
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glColor3d(1,0,0);
-
-    glPushMatrix();
-        glTranslated(-2.4,1.2,-6);
-        glRotated(60,1,0,0);
-        glRotated(a,0,0,1);
-        glutSolidSphere(1,slices,stacks);
-    glPopMatrix();
-
-    glPushMatrix();
-        glTranslated(0,1.2,-6);
-        glRotated(60,1,0,0);
-        glRotated(a,0,0,1);
-        glutSolidCone(1,1,slices,stacks);
-    glPopMatrix();
-
-    glPushMatrix();
-        glTranslated(2.4,1.2,-6);
-        glRotated(60,1,0,0);
-        glRotated(a,0,0,1);
-        glutSolidTorus(0.2,0.8,slices,stacks);
-    glPopMatrix();
-
-    glPushMatrix();
-        glTranslated(-2.4,-1.2,-6);
-        glRotated(60,1,0,0);
-        glRotated(a,0,0,1);
-        glutWireSphere(1,slices,stacks);
-    glPopMatrix();
-
-    glPushMatrix();
-        glTranslated(0,-1.2,-6);
-        glRotated(60,1,0,0);
-        glRotated(a,0,0,1);
-        glutWireCone(1,1,slices,stacks);
-    glPopMatrix();
-
-    glPushMatrix();
-        glTranslated(2.4,-1.2,-6);
-        glRotated(60,1,0,0);
-        glRotated(a,0,0,1);
-        glutWireTorus(0.2,0.8,slices,stacks);
-    glPopMatrix();
-
-    glutSwapBuffers();
-}
-
-
-static void key(unsigned char key, int x, int y)
-{
-    switch (key)
-    {
-        case 27 :
-        case 'q':
-            exit(0);
-            break;
-
-        case '+':
-            slices++;
-            stacks++;
-            break;
-
-        case '-':
-            if (slices>3 && stacks>3)
-            {
-                slices--;
-                stacks--;
-            }
-            break;
+void menuContexto(int option) {
+    if (option == 1) {
+        // Aplica translação
+        transladar(linhaAlterada, 2, 0.2f, 0.0f);  // Translação para a direita
+        transladar(poligonoAlterado, 4, 0.2f, 0.0f);  // Translação para a direita
+    } else if (option == 2) {
+        // Aplica rotação
+        rotacionar(linhaAlterada, 2, 45.0f);  // Rotação de 45 graus
+        rotacionar(poligonoAlterado, 4, 45.0f);  // Rotação de 45 graus
+    } else if (option == 3) {
+        // Aplica escala
+        escalar(poligonoAlterado, 4, 1.5f, 1.5f);  // Escala de 1.5x
+        escalar(linhaAlterada, 2, 1.5f, 1.5f);  // Escala de 1.5x
+    } else if (option == 4) {
+        // Aplica cisalhamento
+        cisalhar(poligonoAlterado, 4, 0.2f, 0.0f);  // Cisalhamento X
+        cisalhar(linhaAlterada, 2, 0.2f, 0.0f);  // Cisalhamento X
+    } else if (option == 5) {
+        // Aplica espelhamento
+        espelhar(poligonoAlterado, 4, true, false);  // Espelhamento no eixo Y
+        espelhar(linhaAlterada, 2, true, false);  // Espelhamento no eixo Y
     }
 
     glutPostRedisplay();
 }
 
-static void idle(void)
-{
-    glutPostRedisplay();
+void criaMenu() {
+    glutCreateMenu(menuContexto);
+    glutAddMenuEntry("Transladar", 1);
+    glutAddMenuEntry("Rotacionar", 2);
+    glutAddMenuEntry("Escalar", 3);
+    glutAddMenuEntry("Cisalhar", 4);
+    glutAddMenuEntry("Espelhar", 5);
+
+    glutAttachMenu(GLUT_RIGHT_BUTTON);
 }
 
-const GLfloat light_ambient[]  = { 0.0f, 0.0f, 0.0f, 1.0f };
-const GLfloat light_diffuse[]  = { 1.0f, 1.0f, 1.0f, 1.0f };
-const GLfloat light_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-const GLfloat light_position[] = { 2.0f, 5.0f, 5.0f, 0.0f };
-
-const GLfloat mat_ambient[]    = { 0.7f, 0.7f, 0.7f, 1.0f };
-const GLfloat mat_diffuse[]    = { 0.8f, 0.8f, 0.8f, 1.0f };
-const GLfloat mat_specular[]   = { 1.0f, 1.0f, 1.0f, 1.0f };
-const GLfloat high_shininess[] = { 100.0f };
-
-/* Program entry point */
-
-int main(int argc, char *argv[])
-{
+int main(int argc, char** argv) {
     glutInit(&argc, argv);
-    glutInitWindowSize(640,480);
-    glutInitWindowPosition(10,10);
-    glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutInitWindowSize(500, 500);
+    glutInitWindowPosition(100, 100);
+    glutCreateWindow("Transformações com Viewports");
 
-    glutCreateWindow("GLUT Shapes");
-
-    glutReshapeFunc(resize);
+    inicializar();
+    criaMenu();
     glutDisplayFunc(display);
-    glutKeyboardFunc(key);
-    glutIdleFunc(idle);
-
-    glClearColor(1,1,1,1);
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
-
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
-
-    glEnable(GL_LIGHT0);
-    glEnable(GL_NORMALIZE);
-    glEnable(GL_COLOR_MATERIAL);
-    glEnable(GL_LIGHTING);
-
-    glLightfv(GL_LIGHT0, GL_AMBIENT,  light_ambient);
-    glLightfv(GL_LIGHT0, GL_DIFFUSE,  light_diffuse);
-    glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
-    glLightfv(GL_LIGHT0, GL_POSITION, light_position);
-
-    glMaterialfv(GL_FRONT, GL_AMBIENT,   mat_ambient);
-    glMaterialfv(GL_FRONT, GL_DIFFUSE,   mat_diffuse);
-    glMaterialfv(GL_FRONT, GL_SPECULAR,  mat_specular);
-    glMaterialfv(GL_FRONT, GL_SHININESS, high_shininess);
-
     glutMainLoop();
-
-    return EXIT_SUCCESS;
+    return 0;
 }
