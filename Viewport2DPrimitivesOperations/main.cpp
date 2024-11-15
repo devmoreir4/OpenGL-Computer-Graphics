@@ -69,7 +69,7 @@ void display() {
     glColor3f(0.0, 0.0, 1.0);
     desenhaPoligono(poligono, 4);
 
-    glViewport(250, 0, 400, 500);
+    glViewport(250, 0, 700, 600);
     glColor3f(1.0, 0.0, 0.0);
     desenhaPonto(pontoAlterado);
     glColor3f(0.0, 1.0, 0.0);
@@ -117,7 +117,7 @@ void mouse(int button, int state, int x, int y) {
 int main(int argc, char** argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
-    glutInitWindowSize(650, 500);
+    glutInitWindowSize(850, 500);
     glutInitWindowPosition(100, 100);
     glutCreateWindow("Transformações com Viewports");
 
