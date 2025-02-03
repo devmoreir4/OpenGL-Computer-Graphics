@@ -1,11 +1,18 @@
 #include <GL/freeglut.h>
-#include <iostream>
+#include <stdlib.h>
 
-using namespace std;
+enum ObjectType {
+    OBJ_CUBE,
+    OBJ_PYRAMID
+};
 
-int selectedObject = 1; // 1: Cubo, 2: Pirâmide
-int transformation = 0; // 0: Nenhuma, 1: Translação, 2: Escala, 3: Rotação, 4: Reflexão, 5: Cisalhamento
-float angle = 0.0f; // Ângulo de rotação
+ObjectType currentObject = OBJ_CUBE;
+
+float accumTranslateX = 0.0f, accumTranslateY = 0.0f, accumTranslateZ = 0.0f;
+float accumScaleX = 1.0f, accumScaleY = 1.0f, accumScaleZ = 1.0f;
+float accumRotationAngle = 0.0f; // em graus
+float shearFactor = 0.0f;        // fator de cisalhamento em X com relacao a Y
+bool reflectFlag = false;        // se true, aplica reflexao no eixo X
 
 void drawCube() {
     glutSolidCube(1.0);
@@ -13,130 +20,172 @@ void drawCube() {
 
 void drawPyramid() {
     glBegin(GL_TRIANGLES);
+    // face frontal
+    glVertex3f( 0.0f,  1.0f,  0.0f); // vertice superior
+    glVertex3f(-1.0f, -1.0f,  1.0f); // base esquerda
+    glVertex3f( 1.0f, -1.0f,  1.0f); // base direita
 
-    // Face frontal
-    glVertex3f(0.0f, 0.5f, 0.0f);
-    glVertex3f(-0.5f, -0.5f, 0.5f);
-    glVertex3f(0.5f, -0.5f, 0.5f);
+    // face direita
+    glVertex3f( 0.0f,  1.0f,  0.0f);
+    glVertex3f( 1.0f, -1.0f,  1.0f);
+    glVertex3f( 1.0f, -1.0f, -1.0f);
 
-    // Face direita
-    glVertex3f(0.0f, 0.5f, 0.0f);
-    glVertex3f(0.5f, -0.5f, 0.5f);
-    glVertex3f(0.5f, -0.5f, -0.5f);
+    // face de tras
+    glVertex3f( 0.0f,  1.0f,  0.0f);
+    glVertex3f( 1.0f, -1.0f, -1.0f);
+    glVertex3f(-1.0f, -1.0f, -1.0f);
 
-    // Face esquerda
-    glVertex3f(0.0f, 0.5f, 0.0f);
-    glVertex3f(-0.5f, -0.5f, -0.5f);
-    glVertex3f(-0.5f, -0.5f, 0.5f);
-
-    // Face traseira
-    glVertex3f(0.0f, 0.5f, 0.0f);
-    glVertex3f(0.5f, -0.5f, -0.5f);
-    glVertex3f(-0.5f, -0.5f, -0.5f);
-
+    // face esquerda
+    glVertex3f( 0.0f,  1.0f,  0.0f);
+    glVertex3f(-1.0f, -1.0f, -1.0f);
+    glVertex3f(-1.0f, -1.0f,  1.0f);
     glEnd();
 
+    // base (quadrilatero)
     glBegin(GL_QUADS);
-    // Base da pirâmide
-    glVertex3f(-0.5f, -0.5f, 0.5f);
-    glVertex3f(0.5f, -0.5f, 0.5f);
-    glVertex3f(0.5f, -0.5f, -0.5f);
-    glVertex3f(-0.5f, -0.5f, -0.5f);
+    glVertex3f(-1.0f, -1.0f,  1.0f);
+    glVertex3f( 1.0f, -1.0f,  1.0f);
+    glVertex3f( 1.0f, -1.0f, -1.0f);
+    glVertex3f(-1.0f, -1.0f, -1.0f);
     glEnd();
 }
 
-void display() {
+void display(void) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
 
-    gluLookAt(0.0, 0.0, 3.0,  // Posição da câmera
-              0.0, 0.0, 0.0,  // Ponto para onde olha
-              0.0, 1.0, 0.0); // Direção "up"
+    // config camera
+    gluLookAt(3.0, 3.0, 5.0,   // posicao do olho
+              0.0, 0.0, 0.0,   // para onde olhar
+              0.0, 1.0, 0.0);  // vetor "up"
 
-    // transformações
-    switch (transformation) {
-        case 1: glTranslatef(1.0f, 0.0f, 0.0f); break;
-        case 2: glScalef(1.5f, 1.5f, 1.5f); break;
-        case 3: glRotatef(angle, 0.0f, 1.0f, 0.0f); break;
-        case 4: glScalef(-1.0f, 1.0f, 1.0f); break;
-        case 5: {
-            GLfloat shearMatrix[16] = {
-                1.0f, 0.5f, 0.0f, 0.0f,
-                0.5f, 1.0f, 0.0f, 0.0f,
-                0.0f, 0.0f, 1.0f, 0.0f,
-                0.0f, 0.0f, 0.0f, 1.0f
-            };
-            glMultMatrixf(shearMatrix);
-            break;
-        }
+    glPushMatrix();
+
+    // transformacoes acumuladas
+    glTranslatef(accumTranslateX, accumTranslateY, accumTranslateZ);
+    glRotatef(accumRotationAngle, 0.0f, 1.0f, 0.0f);
+    glScalef(accumScaleX, accumScaleY, accumScaleZ);
+
+    // se ativa, inverte o eixo X
+    if(reflectFlag) {
+        glScalef(-1.0f, 1.0f, 1.0f);
     }
 
-    if (selectedObject == 1) drawCube();
-    else drawPyramid();
+    // aplica o cisalhamento se o fator for diferente de zero
+    if(shearFactor != 0.0f) {
+        GLfloat shearMatrix[16] = {
+            1.0f, shearFactor, 0.0f, 0.0f,
+            0.0f, 1.0f,       0.0f, 0.0f,
+            0.0f, 0.0f,       1.0f, 0.0f,
+            0.0f, 0.0f,       0.0f, 1.0f
+        };
+        glMultMatrixf(shearMatrix);
+    }
+
+    switch(currentObject) {
+        case OBJ_CUBE:
+            drawCube();
+            break;
+        case OBJ_PYRAMID:
+            drawPyramid();
+            break;
+    }
+    glPopMatrix();
 
     glutSwapBuffers();
 }
 
+// mudancas no tamanho da janela
 void reshape(int w, int h) {
-    if (h == 0) h = 1;
-    float ratio = (float)w / (float)h;
+    if(h == 0) h = 1; // evita divisao por zero
+    float aspect = (float)w / h;
 
     glViewport(0, 0, w, h);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(45.0, ratio, 1.0, 100.0);
+    gluPerspective(45.0, aspect, 1.0, 100.0);
     glMatrixMode(GL_MODELVIEW);
 }
 
-void menu(int option) {
-    if (option == 6) exit(0);
-    transformation = option;
-    glutPostRedisplay();
-}
-
 void objectMenu(int option) {
-    selectedObject = option;
+    currentObject = (ObjectType) option;
     glutPostRedisplay();
 }
 
-void timer(int value) {
-    angle += 1.0f;
-    if (angle > 360.0f) angle -= 360.0f;
+void transformMenu(int option) {
+    switch(option) {
+        case 1: // translacao
+            accumTranslateX += 0.2f;
+            accumTranslateY += 0.2f;
+            break;
+        case 2: // escala
+            accumScaleX *= 1.1f;
+            accumScaleY *= 1.1f;
+            accumScaleZ *= 1.1f;
+            break;
+        case 3: // rotacao
+            accumRotationAngle += 15.0f;
+            break;
+        case 4: // reflexao (toggle)
+            reflectFlag = !reflectFlag;
+            break;
+        case 5: // cisalhamento
+            shearFactor += 0.1f;
+            break;
+        case 6: // reset
+            accumTranslateX = accumTranslateY = accumTranslateZ = 0.0f;
+            accumScaleX = accumScaleY = accumScaleZ = 1.0f;
+            accumRotationAngle = 0.0f;
+            shearFactor = 0.0f;
+            reflectFlag = false;
+            break;
+    }
     glutPostRedisplay();
-    glutTimerFunc(16, timer, 0);
+}
+
+void mainMenu(int option) {
+    if(option == 0)
+        exit(0);
+}
+
+void initGL() {
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    glEnable(GL_DEPTH_TEST);
 }
 
 int main(int argc, char** argv) {
     glutInit(&argc, argv);
+    // double buffering, modo RGBA e profundidade
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
     glutInitWindowSize(800, 600);
     glutInitWindowPosition(100, 100);
-    glutCreateWindow("Transformações 3D");
-
-    glEnable(GL_DEPTH_TEST);
-
-    // menus
-    int transformationMenu = glutCreateMenu(menu);
-    glutAddMenuEntry("Translação", 1);
-    glutAddMenuEntry("Escala", 2);
-    glutAddMenuEntry("Rotação", 3);
-    glutAddMenuEntry("Reflexão", 4);
-    glutAddMenuEntry("Cisalhamento", 5);
-    glutAddMenuEntry("Sair", 6);
-
-    int objectMenuID = glutCreateMenu(objectMenu);
-    glutAddMenuEntry("Cubo", 1);
-    glutAddMenuEntry("Pirâmide", 2);
-
-    glutCreateMenu(menu);
-    glutAddSubMenu("Selecionar Objeto", objectMenuID);
-    glutAddSubMenu("Transformações", transformationMenu);
-    glutAttachMenu(GLUT_RIGHT_BUTTON);
+    glutCreateWindow("Transformacoes 3D Acumulativas");
 
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
-    glutTimerFunc(0, timer, 0);
-    glutMainLoop();
+    initGL();
 
+    // submenu objeto
+    int submenu_object = glutCreateMenu(objectMenu);
+    glutAddMenuEntry("Cubo", OBJ_CUBE);
+    glutAddMenuEntry("Piramide", OBJ_PYRAMID);
+
+    // submenu transformacoes acumulativas
+    int submenu_transform = glutCreateMenu(transformMenu);
+    glutAddMenuEntry("Translacao", 1);
+    glutAddMenuEntry("Escala", 2);
+    glutAddMenuEntry("Rotacao", 3);
+    glutAddMenuEntry("Reflexao", 4);
+    glutAddMenuEntry("Cisalhamento", 5);
+    glutAddMenuEntry("Reset", 6);
+
+    // main menu
+    glutCreateMenu(mainMenu);
+    glutAddSubMenu("Selecionar Objeto", submenu_object);
+    glutAddSubMenu("Transformacoes Acumulativas", submenu_transform);
+    glutAddMenuEntry("Sair", 0);
+    glutAttachMenu(GLUT_RIGHT_BUTTON);
+
+    glutMainLoop();
     return 0;
 }
