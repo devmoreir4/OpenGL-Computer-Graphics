@@ -1,7 +1,7 @@
 # depslib dependency file v1.0
-1738540942 source:c:\users\carlos\documents\github\opengl-computer-graphics\custom3dgraphicsoperations\main.cpp
+1738541959 source:c:\users\carlos\documents\github\opengl-computer-graphics\custom3dgraphicsoperations\main.cpp
 	<GL/freeglut.h>
-	<iostream>
+	<stdlib.h>
 
 1426360528 c:\program files\codeblocks\mingw\include\gl\freeglut.h
 	"freeglut_std.h"
